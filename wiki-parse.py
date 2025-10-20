@@ -13,7 +13,7 @@ import joblib
 import json
 
 # ---------------------------
-# Ensure NLTK data
+# NLTK data
 # ---------------------------
 def ensure_nltk_data():
     resources = {
@@ -94,7 +94,7 @@ def load_index(data_dir="."):
     if not rebuild:
         placeholder.text("Loading cached index...")
         vectorizer, tfidf_matrix, doc_ids = joblib.load("tfidf_index.pkl")
-        placeholder.text("Index loaded ✅")
+        placeholder.text("Index loaded")
         return vectorizer, tfidf_matrix, doc_ids
 
     corpus = {os.path.splitext(f)[0]: extract_text_from_html(os.path.join(data_dir, f))
@@ -111,7 +111,7 @@ def load_index(data_dir="."):
     joblib.dump((vectorizer, tfidf_matrix, doc_ids), "tfidf_index.pkl")
     cache_file_count(len(corpus_files))
 
-    placeholder.text(f"Index built ✅ ({len(doc_ids)} docs)")
+    placeholder.text(f"Index built, ({len(doc_ids)} docs)")
     return vectorizer, tfidf_matrix, doc_ids
 
 # ---------------------------
@@ -126,19 +126,19 @@ def expand_query(query, mode):
             # only nouns
             synsets = wn.synsets(word, pos=wn.NOUN)
             for syn in synsets:
-                # filter for musical-related senses
+                # synonyms
                 if "music" in syn.definition() or "musical" in syn.definition():
                     for lemma in syn.lemmas():
                         expanded.add(lemmatizer.lemmatize(lemma.name().replace("_", " ")))
 
-                    # add hypernyms if they seem relevant
+                    # hypernyms
                     for hyper in syn.hypernyms():
                         if "music" in hyper.definition() or "musical" in hyper.definition():
                             for lemma in hyper.lemmas():
                                 expanded.add(lemmatizer.lemmatize(lemma.name().replace("_", " ")))
 
     elif mode < 0:
-        # narrow: keep longer words
+        # narrow: i.e. longer words
         expanded = {w for w in tokens if len(w) > 3}
 
     return " ".join(expanded)
