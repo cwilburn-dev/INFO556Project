@@ -165,7 +165,7 @@ if st.button("Search") and query.strip():
     st.subheader("Top Results:")
     for doc, score in results:
         # Link to local HTML file
-        file_path = f"articles/{doc}.html"
+        file_path = f"https://raw.https://github.com/cwilburn-dev/INFO556Project/main/articles/{doc}.html"
         if os.path.exists(file_path):
             st.markdown(f"[{doc}]({file_path}) — {score:.3f}")
         else:
