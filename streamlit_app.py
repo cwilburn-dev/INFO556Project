@@ -11,6 +11,7 @@ import numpy as np
 import streamlit as st
 import joblib
 import json
+import urllib.parse
 
 # ---------------------------
 # Ensure NLTK data
@@ -169,5 +170,6 @@ if st.button("Search") and query.strip():
     github_raw_base = "https://github.com/cwilburn-dev/INFO556Project/main/articles"
 
     for doc, score in results:
-        file_url = f"{github_raw_base}/{doc}.html"
+        encoded_filename = urllib.parse.quote(f"{doc}.html")
+        file_url = f"{github_raw_base}/{encoded_filename}"
         st.markdown(f"[{doc}]({file_url}) — {score:.3f}")
