@@ -170,6 +170,6 @@ if st.button("Search") and query.strip():
     github_raw_base = "https://github.com/cwilburn-dev/INFO556Project/main/articles"
 
     for doc, score in results:
-        encoded_filename = urllib.parse.quote(f"{doc}.html")
+        encoded_filename = urllib.parse.quote(f"{doc}.htm")
         file_url = f"{github_raw_base}/{encoded_filename}"
         st.markdown(f"[{doc}]({file_url}) — {score:.3f}")
