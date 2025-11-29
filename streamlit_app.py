@@ -167,7 +167,7 @@ if st.button("Search") and query.strip():
 
     results = search(expanded_query, vectorizer, tfidf_matrix, doc_ids)
     st.subheader("Top Results:")
-    github_pages = "https://cwilburn-dev.github.io/INFO556Project/articles/<file-name>.htm"
+    github_pages = "https://cwilburn-dev.github.io/INFO556Project/articles/"
 
     for doc, score in results:
         encoded_filename = urllib.parse.quote(f"{doc}.htm")
