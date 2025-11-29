@@ -1,0 +1,6 @@
+streamlit
+beautifulsoup4
+nltk
+scikit-learn
+numpy
+joblib
