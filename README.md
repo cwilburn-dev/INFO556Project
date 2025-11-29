@@ -30,8 +30,6 @@ The system includes:
 
 No external database is required; all data is processed locally.
 
----
-
 ## Features
 
 - TF-IDF document indexing with scikit-learn
@@ -40,8 +38,6 @@ No external database is required; all data is processed locally.
 - Extraction of paragraph text from Wikipedia HTML pages
 - Streamlit interface for querying and displaying ranked results
 - Works entirely offline once articles are downloaded
-
----
 
 ## Installation
 ### Clone Repository
@@ -61,14 +57,13 @@ joblib
 To install the dependencies, execute the command below:
 pip install -r requirements.txt
 
----
-
 ## Usage
 
 Run the Streamlit application:
 streamlit run streamlit_app.py
 
 Once running, the Streamlit app should open in your browser automatically.  
+
 If not, navigate to:  
 http://localhost:8501
 
