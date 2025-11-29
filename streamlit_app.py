@@ -166,9 +166,9 @@ if st.button("Search") and query.strip():
 
     results = search(expanded_query, vectorizer, tfidf_matrix, doc_ids)
     st.subheader("Top Results:")
+    github_raw_base = "https://github.com/cwilburn-dev/INFO556Project/raw/main/articles"
+
     for doc, score in results:
-        file_path = doc_paths.get(doc)
-        if file_path and os.path.exists(file_path):
-            st.markdown(f"[{doc}]({file_path}) — {score:.3f}")
-        else:
-            st.markdown(f"{doc} — {score:.3f} (file missing)")
+        # Construct the raw GitHub URL
+        file_url = f"{github_raw_base}/{doc}.html"
+        st.markdown(f"[{doc}]({file_url}) — {score:.3f}")
