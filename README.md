@@ -1,5 +1,4 @@
 # Wikipedia Search Demo
-
 A lightweight search engine built with Streamlit that indexes locally stored Wikipedia HTML articles using TF-IDF.
 The project demonstrates document preprocessing, vectorization, ranking, and adjustable query expansion using WordNet.
 
@@ -16,7 +15,6 @@ The project demonstrates document preprocessing, vectorization, ranking, and adj
 ---
 
 ## About
-
 This project provides a simple text retrieval system designed for experimentation and instructional use.
 Users can load a set of locally downloaded Wikipedia articles, build a TF-IDF index, and perform ranked retrieval through a Streamlit interface.
 
@@ -31,7 +29,6 @@ The system includes:
 No external database is required; all data is processed locally.
 
 ## Features
-
 - TF-IDF document indexing with scikit-learn
 - Automatic index caching to improve performance
 - Adjustable query expansion (narrow, neutral, broad)
@@ -40,26 +37,26 @@ No external database is required; all data is processed locally.
 - Works entirely offline once articles are downloaded
 
 ## Installation
+
 ### Clone Repository
-git clone https://github.com/cwilburn-dev/INFO556Project.git
+git clone https://github.com/cwilburn-dev/INFO556Project.git  
 cd INFO556Project
 
 ### Install Dependencies
 The following libraries are required for the project:
 
-streamlit
-beautifulsoup4
-nltk
-scikit-learn
-numpy
-joblib
+- streamlit
+- beautifulsoup4
+- nltk
+- scikit-learn
+- numpy
+- joblib
 
-To install the dependencies, execute the command below:
+To install the dependencies, execute the command below:  
 pip install -r requirements.txt
 
 ## Usage
-
-Run the Streamlit application:
+Run the Streamlit application:  
 streamlit run streamlit_app.py
 
 Once running, the Streamlit app should open in your browser automatically.  
@@ -70,7 +67,6 @@ http://localhost:8501
 ---
 
 ## Query expansion
-
 The query expansion slider supports three modes:
 - −1 (Narrow): removes very short terms to tighten the query
 - 0 (Neutral): searches using only the original query terms
