@@ -167,9 +167,9 @@ if st.button("Search") and query.strip():
 
     results = search(expanded_query, vectorizer, tfidf_matrix, doc_ids)
     st.subheader("Top Results:")
-    github_raw_base = "https://raw.github.com/cwilburn-dev/INFO556Project/main/articles"
+    github_pages = "https://cwilburn-dev.github.io/INFO556Project/articles/<file-name>,htm"
 
     for doc, score in results:
         encoded_filename = urllib.parse.quote(f"{doc}.htm")
-        file_url = f"{github_raw_base}/{encoded_filename}"
+        file_url = f"{github_pages}/{encoded_filename}"
         st.markdown(f"[{doc}]({file_url}) — {score:.3f}")
