@@ -93,9 +93,9 @@ def load_index(data_dir="articles"):
 
     if not rebuild:
         placeholder.text("Loading cached index...")
-        vectorizer, tfidf_matrix, doc_ids = joblib.load("tfidf_index.pkl")
+        vectorizer, tfidf_matrix, doc_ids, doc_paths = joblib.load("tfidf_index.pkl")
         placeholder.text("Index loaded ✅")
-        return vectorizer, tfidf_matrix, doc_ids
+        return vectorizer, tfidf_matrix, doc_ids, doc_paths
 
     placeholder.text(f"Building TF-IDF index for {len(corpus_files)} documents...")
     corpus = {os.path.splitext(f)[0]: extract_text_from_html(os.path.join(data_dir, f))
@@ -108,10 +108,13 @@ def load_index(data_dir="articles"):
     vectorizer = TfidfVectorizer(max_features=10000, min_df=1)
     tfidf_matrix = vectorizer.fit_transform(docs_as_text)
 
-    joblib.dump((vectorizer, tfidf_matrix, doc_ids), "tfidf_index.pkl")
+    # Add mapping from doc_id to actual file path
+    doc_paths = {os.path.splitext(f)[0]: os.path.join(data_dir, f) for f in corpus_files}
+
+    joblib.dump((vectorizer, tfidf_matrix, doc_ids, doc_paths), "tfidf_index.pkl")
     cache_file_count(len(corpus_files))
     placeholder.text(f"Index built ✅ ({len(doc_ids)} docs)")
-    return vectorizer, tfidf_matrix, doc_ids
+    return vectorizer, tfidf_matrix, doc_ids, doc_paths
 
 # ---------------------------
 # Query expansion
@@ -147,7 +150,7 @@ def search(query, vectorizer, tfidf_matrix, doc_ids, top_k=5):
 # ---------------------------
 # Initialize index
 # ---------------------------
-vectorizer, tfidf_matrix, doc_ids = load_index(data_dir="articles")
+vectorizer, tfidf_matrix, doc_ids, doc_paths = load_index()
 
 # ---------------------------
 # Streamlit UI
@@ -164,9 +167,8 @@ if st.button("Search") and query.strip():
     results = search(expanded_query, vectorizer, tfidf_matrix, doc_ids)
     st.subheader("Top Results:")
     for doc, score in results:
-        # Link to local HTML file
-        file_path = f"https://raw.https://github.com/cwilburn-dev/INFO556Project/main/articles/{doc}.html"
-        if os.path.exists(file_path):
+        file_path = doc_paths.get(doc)
+        if file_path and os.path.exists(file_path):
             st.markdown(f"[{doc}]({file_path}) — {score:.3f}")
         else:
             st.markdown(f"{doc} — {score:.3f} (file missing)")
