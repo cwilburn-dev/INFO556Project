@@ -113,10 +113,8 @@ def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
 
     if mode == -1:
         # Narrow: only nouns
-        for word in tokens:
-            if wn.synsets(word, pos=wn.NOUN):
-                core_tokens.add(word)
-        return " ".join(core_tokens), {"original": original_tokens, "core": core_tokens, "expanded": set()}
+        core_tokens = {w for w in tokens if wn.synsets(w, pos=wn.NOUN)}
+        return " ".join(core_tokens), {"original": set(), "core": core_tokens, "expanded": set()}
 
     if mode == 0:
         # Normal: full preprocessed query
