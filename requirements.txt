@@ -4,3 +4,5 @@ nltk
 scikit-learn
 numpy
 joblib
+BM25Okapi
+Word2Vec
