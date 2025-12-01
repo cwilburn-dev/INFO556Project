@@ -2,8 +2,7 @@ streamlit
 beautifulsoup4
 nltk
 scikit-learn
-numpy==1.26.4
+numpy
 joblib
 rank-bm25
 lxml
-gensim==4.3.2
