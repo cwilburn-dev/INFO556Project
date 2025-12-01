@@ -2,7 +2,8 @@ streamlit
 beautifulsoup4
 nltk
 scikit-learn
-numpy
+numpy==1.26.4
 joblib
-BM25Okapi
-Word2Vec
+gensim==4.3.2
+rank-bm25
+lxml
