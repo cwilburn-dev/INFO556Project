@@ -162,14 +162,16 @@ def search(query, vectorizer, tfidf_matrix, doc_ids, top_k=5):
 vectorizer, tfidf_matrix, doc_ids, doc_paths = load_index()
 
 # ---------------------------
-# Streamlit UI
+# Streamlit UI with Enter-to-Submit
 # ---------------------------
 st.title("🔍 Wikipedia Search Demo")
 
-query = st.text_input("Enter your query:")
-mode = st.slider("Query Expansion", -1, 1, 0, help="-1 narrow, 0 normal, 1 broad")
+with st.form("search_form"):
+    query = st.text_input("Enter your query:")
+    mode = st.slider("Query Expansion", -1, 1, 0, help="-1 narrow, 0 normal, 1 broad")
+    submitted = st.form_submit_button("Search")
 
-if st.button("Search") and query.strip():
+if submitted and query.strip():
     expanded_query = expand_query(query, mode)
     st.markdown(f"**Expanded query:** {expanded_query}")
 
@@ -181,3 +183,4 @@ if st.button("Search") and query.strip():
         encoded_filename = urllib.parse.quote(f"{doc}.htm")
         file_url = f"{github_pages}/{encoded_filename}"
         st.markdown(f"[{doc}]({file_url}) — {score:.3f}")
+
