@@ -1,8 +1,6 @@
 from bs4 import BeautifulSoup
 import os
 import re
-import nltk
-from nltk.data import find
 from nltk.corpus import stopwords, wordnet as wn
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -14,47 +12,49 @@ import json
 import urllib.parse
 
 # ---------------------------
-# Set up local NLTK folder for Streamlit Cloud
+# Setup
 # ---------------------------
 NLTK_DATA_DIR = os.path.join(os.getcwd(), "nltk_data")
 os.makedirs(NLTK_DATA_DIR, exist_ok=True)
-nltk.data.path.append(NLTK_DATA_DIR)
 
-# Download required resources if missing
-for pkg in ['punkt', 'stopwords', 'wordnet', 'omw-1.4']:
+# Download stopwords and wordnet if missing
+import nltk
+nltk.data.path.append(NLTK_DATA_DIR)
+for pkg in ["stopwords", "wordnet", "omw-1.4"]:
     try:
-        find(f"{pkg}")
+        nltk.data.find(f"corpora/{pkg}")
     except LookupError:
         nltk.download(pkg, download_dir=NLTK_DATA_DIR, quiet=True)
 
-stop_words = set(stopwords.words('english'))
+stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 
 # ---------------------------
 # Preprocessing
 # ---------------------------
 def clean_text(text):
-    text = re.sub(r'\[\d+\]', '', text)  # remove [1], [2]
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"\[\d+\]", "", text)  # remove [1], [2]
+    text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 def extract_text_from_html(filepath):
-    with open(filepath, 'r', encoding='utf-8') as f:
-        soup = BeautifulSoup(f, 'html.parser')
+    with open(filepath, "r", encoding="utf-8") as f:
+        soup = BeautifulSoup(f, "html.parser")
     content_div = (
-        soup.find('div', id='mw-content-text') or
-        soup.find('div', id='bodyContent') or
-        soup.find('body')
+        soup.find("div", id="mw-content-text")
+        or soup.find("div", id="bodyContent")
+        or soup.find("body")
     )
     if not content_div:
         return ""
-    paragraphs = content_div.find_all(['p', 'h1', 'h2', 'h3'])
+    paragraphs = content_div.find_all(["p", "h1", "h2", "h3"])
     text = " ".join(p.get_text() for p in paragraphs)
     return clean_text(text)
 
 def preprocess(text):
-    tokens = nltk.word_tokenize(text.lower())
-    tokens = [t for t in tokens if t.isalpha() and t not in stop_words]
+    # simple regex-based tokenizer instead of punkt
+    tokens = re.findall(r"\b[a-zA-Z]+\b", text.lower())
+    tokens = [t for t in tokens if t not in stop_words]
     return [lemmatizer.lemmatize(t) for t in tokens]
 
 def vectorize_text(text, vectorizer):
@@ -74,9 +74,8 @@ def cached_file_count():
     return data.get("file_count", 0)
 
 def cache_file_count(count):
-    data = {"file_count": count}
     with open(METADATA_FILE, "w") as f:
-        json.dump(data, f)
+        json.dump({"file_count": count}, f)
 
 @st.cache_resource
 def load_index(data_dir="articles"):
@@ -91,8 +90,10 @@ def load_index(data_dir="articles"):
         return vectorizer, tfidf_matrix, doc_ids, doc_paths
 
     placeholder.text(f"Building TF-IDF index for {len(corpus_files)} documents...")
-    corpus = {os.path.splitext(f)[0]: extract_text_from_html(os.path.join(data_dir, f))
-              for f in corpus_files}
+    corpus = {
+        os.path.splitext(f)[0]: extract_text_from_html(os.path.join(data_dir, f))
+        for f in corpus_files
+    }
 
     corpus_tokens = {doc_id: preprocess(text) for doc_id, text in corpus.items()}
     docs_as_text = [" ".join(tokens) for tokens in corpus_tokens.values()]
@@ -123,12 +124,10 @@ def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
 
     if mode == 0:
         return " ".join(tokens)
-
     if mode < 0:
         narrowed = {w for w in tokens if len(w) > 3}
         return " ".join(narrowed)
 
-    # mode > 0 → broad expansion
     for word in tokens:
         word_expansions = set()
         for pos in [wn.NOUN, wn.VERB, wn.ADJ]:
@@ -143,8 +142,7 @@ def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
                         word_expansions.add(lemmatizer.lemmatize(lemma_name))
         if vectorizer_vocab:
             word_expansions = {w for w in word_expansions if w in vectorizer_vocab}
-        limited = list(word_expansions)[:max_expansions]
-        expanded.update(limited)
+        expanded.update(list(word_expansions)[:max_expansions])
 
     weighted_query = tokens + tokens + list(expanded)
     return " ".join(weighted_query)
