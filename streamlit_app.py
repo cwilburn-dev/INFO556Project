@@ -107,22 +107,30 @@ def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
     if vectorizer_vocab is None:
         vectorizer_vocab = set()
 
-    expanded = set(tokens)
-    core_tokens = set(tokens)  # treat original tokens as core
     original_tokens = set(tokens)
+    core_tokens = set()
+    expanded_tokens = set()
+
+    if mode == -1:
+        # Narrow: only nouns
+        for word in tokens:
+            if wn.synsets(word, pos=wn.NOUN):
+                core_tokens.add(word)
+        return " ".join(core_tokens), {"original": original_tokens, "core": core_tokens, "expanded": set()}
 
     if mode == 0:
+        # Normal: full preprocessed query
+        core_tokens = set(tokens)
         return " ".join(tokens), {"original": original_tokens, "core": core_tokens, "expanded": set()}
-    if mode < 0:
-        narrowed = {w for w in tokens if len(w) > 3}
-        return " ".join(narrowed), {"original": original_tokens, "core": narrowed, "expanded": set()}
 
-    expanded_tokens = set()
+    # mode == 1 (broad): expand with WordNet
+    core_tokens = set(tokens)
+    expanded = set(tokens)
+
     for word in tokens:
         word_expansions = set()
         for pos in [wn.NOUN, wn.VERB, wn.ADJ]:
-            synsets = wn.synsets(word, pos=pos)
-            for syn in synsets:
+            for syn in wn.synsets(word, pos=pos):
                 for lemma in syn.lemmas():
                     lemma_name = lemma.name().replace("_", " ").lower()
                     word_expansions.add(lemmatizer.lemmatize(lemma_name))
@@ -150,7 +158,7 @@ def search(query, vectorizer, tfidf_matrix, doc_ids, doc_paths, top_k=10):
 # endregion
 
 # region STREAMLIT
-st.title("Wikipedia Search Demo (Local)")
+st.title("Wikipedia Search Demo")
 
 tab1, tab2 = st.tabs(["Search Results", "Project Overview"])
 
