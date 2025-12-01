@@ -185,14 +185,15 @@ with tab1:
             expanded_query, token_types = expand_query(query, mode)
             html_tokens = []
             for t in expanded_query.split():
-                if t in token_types["core"]:
-                    color = "#FF4D4D"
+                if t in token_types["original"]:
+                    color = "#4DA6FF"  # blue
+                elif t in token_types["core"]:
+                    color = "#FF4D4D"  # red
                 elif t in token_types["expanded"]:
-                    color = "#33CC33"
-                elif t in token_types["original"]:
-                    color = "#4DA6FF"
+                    color = "#33CC33"  # green
                 else:
                     color = "#FFFFFF"
+
                 html_tokens.append(f"<span style='color:{color}'>{t}</span>")
 
             st.markdown("**Expanded query:**")
