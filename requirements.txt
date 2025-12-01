@@ -4,6 +4,6 @@ nltk
 scikit-learn
 numpy==1.26.4
 joblib
-gensim==4.3.2
+gensim==4.2.0
 rank-bm25
 lxml
