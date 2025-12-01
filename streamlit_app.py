@@ -11,14 +11,13 @@ import joblib
 import json
 import urllib.parse
 
+import nltk
+
 # ---------------------------
 # Setup
 # ---------------------------
 NLTK_DATA_DIR = os.path.join(os.getcwd(), "nltk_data")
 os.makedirs(NLTK_DATA_DIR, exist_ok=True)
-
-# Download stopwords and wordnet if missing
-import nltk
 nltk.data.path.append(NLTK_DATA_DIR)
 for pkg in ["stopwords", "wordnet", "omw-1.4"]:
     try:
@@ -33,7 +32,7 @@ lemmatizer = WordNetLemmatizer()
 # Preprocessing
 # ---------------------------
 def clean_text(text):
-    text = re.sub(r"\[\d+\]", "", text)  # remove [1], [2]
+    text = re.sub(r"\[\d+\]", "", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
@@ -52,7 +51,6 @@ def extract_text_from_html(filepath):
     return clean_text(text)
 
 def preprocess(text):
-    # simple regex-based tokenizer instead of punkt
     tokens = re.findall(r"\b[a-zA-Z]+\b", text.lower())
     tokens = [t for t in tokens if t not in stop_words]
     return [lemmatizer.lemmatize(t) for t in tokens]
@@ -90,18 +88,13 @@ def load_index(data_dir="articles"):
         return vectorizer, tfidf_matrix, doc_ids, doc_paths
 
     placeholder.text(f"Building TF-IDF index for {len(corpus_files)} documents...")
-    corpus = {
-        os.path.splitext(f)[0]: extract_text_from_html(os.path.join(data_dir, f))
-        for f in corpus_files
-    }
-
+    corpus = {os.path.splitext(f)[0]: extract_text_from_html(os.path.join(data_dir, f)) for f in corpus_files}
     corpus_tokens = {doc_id: preprocess(text) for doc_id, text in corpus.items()}
     docs_as_text = [" ".join(tokens) for tokens in corpus_tokens.values()]
     doc_ids = list(corpus_tokens.keys())
 
     vectorizer = TfidfVectorizer(max_features=10000, min_df=1)
     tfidf_matrix = vectorizer.fit_transform(docs_as_text)
-
     doc_paths = {os.path.splitext(f)[0]: os.path.join(data_dir, f) for f in corpus_files}
 
     joblib.dump((vectorizer, tfidf_matrix, doc_ids, doc_paths), "tfidf_index.pkl")
@@ -115,19 +108,22 @@ def load_index(data_dir="articles"):
 def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
     tokens = preprocess(query)
     if not tokens:
-        return query
+        return query, {"original": set(), "core": set(), "expanded": set()}
 
     if vectorizer_vocab is None:
         vectorizer_vocab = set()
 
     expanded = set(tokens)
+    core_tokens = set(tokens)  # treat original tokens as core
+    original_tokens = set(tokens)
 
     if mode == 0:
-        return " ".join(tokens)
+        return " ".join(tokens), {"original": original_tokens, "core": core_tokens, "expanded": set()}
     if mode < 0:
         narrowed = {w for w in tokens if len(w) > 3}
-        return " ".join(narrowed)
+        return " ".join(narrowed), {"original": original_tokens, "core": narrowed, "expanded": set()}
 
+    expanded_tokens = set()
     for word in tokens:
         word_expansions = set()
         for pos in [wn.NOUN, wn.VERB, wn.ADJ]:
@@ -142,45 +138,97 @@ def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
                         word_expansions.add(lemmatizer.lemmatize(lemma_name))
         if vectorizer_vocab:
             word_expansions = {w for w in word_expansions if w in vectorizer_vocab}
-        expanded.update(list(word_expansions)[:max_expansions])
+        limited = list(word_expansions)[:max_expansions]
+        expanded.update(limited)
+        expanded_tokens.update(limited)
 
-    weighted_query = tokens + tokens + list(expanded)
-    return " ".join(weighted_query)
+    weighted_query = tokens + tokens + list(expanded_tokens)
+    return " ".join(weighted_query), {"original": original_tokens, "core": core_tokens, "expanded": expanded_tokens}
 
 # ---------------------------
 # Search
 # ---------------------------
-def search(query, vectorizer, tfidf_matrix, doc_ids, top_k=5):
+def search(query, vectorizer, tfidf_matrix, doc_ids, doc_paths, top_k=10):
     query_vec = vectorize_text(query, vectorizer)
     sims = linear_kernel(query_vec, tfidf_matrix).flatten()
     top_indices = np.argsort(sims)[::-1][:top_k]
-    return [(doc_ids[i], sims[i]) for i in top_indices]
+    results = [(doc_ids[i], sims[i]) for i in top_indices]
+    return results
 
 # ---------------------------
-# Initialize index
+# STREAMLIT
 # ---------------------------
-vectorizer, tfidf_matrix, doc_ids, doc_paths = load_index()
+st.title("Wikipedia Search Demo (Local)")
 
-# ---------------------------
-# Streamlit UI with Enter-to-Submit
-# ---------------------------
-st.title("🔍 Wikipedia Search Demo")
+tab1, tab2 = st.tabs(["Search Results", "Project Overview"])
 
-with st.form("search_form"):
-    query = st.text_input("Enter your query:")
-    mode = st.slider("Query Expansion", -1, 1, 0, help="-1 narrow, 0 normal, 1 broad")
-    submitted = st.form_submit_button("Search")
+with tab1:
+    if "show_main" not in st.session_state:
+        st.session_state.show_main = False
 
-if submitted and query.strip():
-    expanded_query = expand_query(query, mode)
-    st.markdown(f"**Expanded query:** {expanded_query}")
+    def show_main_callback():
+        st.session_state.show_main = True
 
-    results = search(expanded_query, vectorizer, tfidf_matrix, doc_ids)
-    st.subheader("Top Results:")
-    github_pages = "https://cwilburn-dev.github.io/INFO556Project/articles/"
+    if not st.session_state.show_main:
+        st.write(
+            "Welcome! If this is your first time here, building the index may take a minute or two. "
+            "Once ready, you can search the articles immediately."
+        )
+        st.button("Continue", on_click=show_main_callback)
+    else:
+        vectorizer, tfidf_matrix, doc_ids, doc_paths = load_index()
 
-    for doc, score in results:
-        encoded_filename = urllib.parse.quote(f"{doc}.htm")
-        file_url = f"{github_pages}/{encoded_filename}"
-        st.markdown(f"[{doc}]({file_url}) — {score:.3f}")
+        query = st.text_input("Enter your query:")
+        mode = st.slider("Query Expansion", -1, 1, 0, help="-1 narrow, 0 normal, 1 broad")
 
+        if query.strip():
+            expanded_query, token_types = expand_query(query, mode)
+            html_tokens = []
+            for t in expanded_query.split():
+                if t in token_types["core"]:
+                    color = "#FF4D4D"
+                elif t in token_types["expanded"]:
+                    color = "#33CC33"
+                elif t in token_types["original"]:
+                    color = "#4DA6FF"
+                else:
+                    color = "#FFFFFF"
+                html_tokens.append(f"<span style='color:{color}'>{t}</span>")
+
+            st.markdown("**Expanded query:**")
+            st.markdown(" ".join(html_tokens), unsafe_allow_html=True)
+
+            results = search(expanded_query, vectorizer, tfidf_matrix, doc_ids, doc_paths)
+
+            st.subheader("Top Results:")
+            for doc, score in results:
+                file_path = doc_paths.get(doc)
+                if file_path and os.path.exists(file_path):
+                    link_html = f'<a href="{file_path}">{doc}</a>'
+                else:
+                    link_html = doc + " (file missing)"
+                st.markdown(
+                    f'<div style="margin-bottom:0.25rem">{link_html} — {score:.3f}</div>',
+                    unsafe_allow_html=True
+                )
+
+with tab2:
+    st.header("Project Overview")
+    st.markdown(f"""
+    **About**  
+    This project implements a TF-IDF search engine over a small Wikipedia dataset.
+
+    **Query Expansion Slider:**  
+    - `-1` Narrow: only core terms (short/important words)  
+    - `0` Normal: uses original query (stopwords removed)  
+    - `1` Broad: adds related terms from WordNet expansions  
+
+    **Color-Coded Terms:**  
+    - <span style='color:#4DA6FF'>Blue</span>: original query terms  
+    - <span style='color:#FF4D4D'>Red</span>: core/narrow terms  
+    - <span style='color:#33CC33'>Green</span>: expanded terms  
+    - <span style='color:#FFFFFF'>White</span>: artifact from processing  
+
+    **Score Values:**  
+    - Higher scores indicate a better match between your query and the document  
+    """, unsafe_allow_html=True)
