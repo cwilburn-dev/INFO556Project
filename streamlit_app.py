@@ -10,12 +10,9 @@ import streamlit as st
 import joblib
 import json
 import urllib.parse
-
 import nltk
 
-# ---------------------------
-# Setup
-# ---------------------------
+# region Setup
 NLTK_DATA_DIR = os.path.join(os.getcwd(), "nltk_data")
 os.makedirs(NLTK_DATA_DIR, exist_ok=True)
 nltk.data.path.append(NLTK_DATA_DIR)
@@ -27,10 +24,9 @@ for pkg in ["stopwords", "wordnet", "omw-1.4"]:
 
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
+# endregion
 
-# ---------------------------
-# Preprocessing
-# ---------------------------
+# region Preprocessing
 def clean_text(text):
     text = re.sub(r"\[\d+\]", "", text)
     text = re.sub(r"\s+", " ", text)
@@ -58,10 +54,9 @@ def preprocess(text):
 def vectorize_text(text, vectorizer):
     tokens = preprocess(text)
     return vectorizer.transform([" ".join(tokens)])
+# endregion
 
-# ---------------------------
-# Index caching
-# ---------------------------
+# region Index caching
 METADATA_FILE = "index_metadata.json"
 
 def cached_file_count():
@@ -101,10 +96,9 @@ def load_index(data_dir="articles"):
     cache_file_count(len(corpus_files))
     placeholder.text(f"Index built ✅ ({len(doc_ids)} docs)")
     return vectorizer, tfidf_matrix, doc_ids, doc_paths
+# endregion
 
-# ---------------------------
-# Query expansion
-# ---------------------------
+# region Query expansion
 def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
     tokens = preprocess(query)
     if not tokens:
@@ -144,20 +138,18 @@ def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
 
     weighted_query = tokens + tokens + list(expanded_tokens)
     return " ".join(weighted_query), {"original": original_tokens, "core": core_tokens, "expanded": expanded_tokens}
+# endregion
 
-# ---------------------------
-# Search
-# ---------------------------
+# region Search
 def search(query, vectorizer, tfidf_matrix, doc_ids, doc_paths, top_k=10):
     query_vec = vectorize_text(query, vectorizer)
     sims = linear_kernel(query_vec, tfidf_matrix).flatten()
     top_indices = np.argsort(sims)[::-1][:top_k]
     results = [(doc_ids[i], sims[i]) for i in top_indices]
     return results
+# endregion
 
-# ---------------------------
-# STREAMLIT
-# ---------------------------
+# region STREAMLIT
 st.title("Wikipedia Search Demo (Local)")
 
 tab1, tab2 = st.tabs(["Search Results", "Project Overview"])
@@ -232,3 +224,4 @@ with tab2:
     **Score Values:**  
     - Higher scores indicate a better match between your query and the document  
     """, unsafe_allow_html=True)
+# endregion
