@@ -6,3 +6,4 @@ numpy==1.26.4
 joblib
 rank-bm25
 lxml
+gensim==4.3.2
