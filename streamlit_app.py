@@ -14,22 +14,18 @@ import json
 import urllib.parse
 
 # ---------------------------
-# Ensure NLTK data
+# Set up local NLTK folder for Streamlit Cloud
 # ---------------------------
-def ensure_nltk_data():
-    resources = {
-        'punkt': 'tokenizers/punkt',
-        'stopwords': 'corpora/stopwords',
-        'wordnet': 'corpora/wordnet',
-        'omw-1.4': 'corpora/omw-1.4'
-    }
-    for pkg, path in resources.items():
-        try:
-            find(path)
-        except LookupError:
-            nltk.download(pkg, quiet=True)
+NLTK_DATA_DIR = os.path.join(os.getcwd(), "nltk_data")
+os.makedirs(NLTK_DATA_DIR, exist_ok=True)
+nltk.data.path.append(NLTK_DATA_DIR)
 
-ensure_nltk_data()
+# Download required resources if missing
+for pkg in ['punkt', 'stopwords', 'wordnet', 'omw-1.4']:
+    try:
+        find(f"{pkg}")
+    except LookupError:
+        nltk.download(pkg, download_dir=NLTK_DATA_DIR, quiet=True)
 
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
@@ -42,7 +38,6 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
-# extract main text content from HTML page: paragraphs and headings
 def extract_text_from_html(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         soup = BeautifulSoup(f, 'html.parser')
@@ -57,13 +52,11 @@ def extract_text_from_html(filepath):
     text = " ".join(p.get_text() for p in paragraphs)
     return clean_text(text)
 
-# tokenize, remove stopwords, lemmatize
 def preprocess(text):
     tokens = nltk.word_tokenize(text.lower())
     tokens = [t for t in tokens if t.isalpha() and t not in stop_words]
     return [lemmatizer.lemmatize(t) for t in tokens]
 
-# vectorize a single text using the same preprocessing as corpus
 def vectorize_text(text, vectorizer):
     tokens = preprocess(text)
     return vectorizer.transform([" ".join(tokens)])
@@ -108,7 +101,6 @@ def load_index(data_dir="articles"):
     vectorizer = TfidfVectorizer(max_features=10000, min_df=1)
     tfidf_matrix = vectorizer.fit_transform(docs_as_text)
 
-    # add mapping from doc_id to actual file path
     doc_paths = {os.path.splitext(f)[0]: os.path.join(data_dir, f) for f in corpus_files}
 
     joblib.dump((vectorizer, tfidf_matrix, doc_ids, doc_paths), "tfidf_index.pkl")
@@ -119,63 +111,42 @@ def load_index(data_dir="articles"):
 # ---------------------------
 # Query expansion
 # ---------------------------
-# expand query with WordNet synonyms, hypernyms. uses nouns, verbs, adj
-# filters to corpus and limits expansion per word
-# original query given extra weight
 def expand_query(query, mode, vectorizer_vocab=None, max_expansions=5):
     tokens = preprocess(query)
     if not tokens:
         return query
 
-    # allow passing vectorizer vocabulary
     if vectorizer_vocab is None:
         vectorizer_vocab = set()
 
     expanded = set(tokens)
 
-    # If mode == 0 → skip expansion, normal search
     if mode == 0:
         return " ".join(tokens)
 
-    # If mode < 0 → narrow search (remove small/common words)
     if mode < 0:
         narrowed = {w for w in tokens if len(w) > 3}
         return " ".join(narrowed)
 
-    # -----------------------------------------------------------
-    # mode > 0: BROAD SEARCH (smart expansion)
-    # -----------------------------------------------------------
+    # mode > 0 → broad expansion
     for word in tokens:
         word_expansions = set()
-
-        # Search WordNet across noun/verb/adjective POS
         for pos in [wn.NOUN, wn.VERB, wn.ADJ]:
             synsets = wn.synsets(word, pos=pos)
-
             for syn in synsets:
-                # synonyms
                 for lemma in syn.lemmas():
                     lemma_name = lemma.name().replace("_", " ").lower()
                     word_expansions.add(lemmatizer.lemmatize(lemma_name))
-
-                # hypernyms
                 for hyper in syn.hypernyms():
                     for lemma in hyper.lemmas():
                         lemma_name = lemma.name().replace("_", " ").lower()
                         word_expansions.add(lemmatizer.lemmatize(lemma_name))
-
-        # Filter to vocabulary if supplied
         if vectorizer_vocab:
             word_expansions = {w for w in word_expansions if w in vectorizer_vocab}
-
-        # Limit expansions so we don’t blow up the query
         limited = list(word_expansions)[:max_expansions]
-
         expanded.update(limited)
 
-    # Weight original query words by repeating them
     weighted_query = tokens + tokens + list(expanded)
-
     return " ".join(weighted_query)
 
 # ---------------------------
