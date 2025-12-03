@@ -44,7 +44,6 @@ def clean_text(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
-
 def extract_text_from_html(filepath: str) -> str:
     """Extract content text from a Wikipedia HTML file."""
     if not os.path.exists(filepath):
@@ -300,8 +299,10 @@ with tab1:
                 st.subheader("Top Results:")
                 for doc, score in results:
                     file_path = doc_paths.get(doc)
+                    url = f"https://cwilburn-dev.github.io/INFO556Project/articles/{urllib.parse.quote(doc + '.htm')}"
                     if file_path and os.path.exists(file_path):
-                        link_html = f'<a href="{file_path}">{doc}</a>'
+                        #link_html = f'<a href="{file_path}">{doc}</a>'
+                        link_html = f'<a href="{url}" target="_blank" rel="noopener noreferrer">{doc}</a>'
                     else:
                         link_html = f"{doc} (file missing)"
 
