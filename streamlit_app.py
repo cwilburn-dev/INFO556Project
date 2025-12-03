@@ -15,6 +15,9 @@ import urllib.parse
 import nltk
 
 # region CONSTANTS/CONFIG
+# ============================================================
+#                     CONSTANTS & CONFIG
+# ============================================================
 NLTK_DATA_DIR = os.path.join(os.getcwd(), "nltk_data")
 os.makedirs(NLTK_DATA_DIR, exist_ok=True)
 nltk.data.path.append(NLTK_DATA_DIR)
@@ -38,6 +41,9 @@ METADATA_FILE = "index_metadata.json"
 # endregion
 
 # region PREPROCESSING
+# ============================================================
+#                       PREPROCESSING
+# ============================================================
 def clean_text(text: str) -> str:
     """Remove bracketed citations and normalize whitespace."""
     text = re.sub(r"\[\d+\]", "", text)
@@ -80,6 +86,9 @@ def vectorize_text(text: str, vectorizer: TfidfVectorizer):
 # endregion
 
 # region INDEX CACHING
+# ============================================================
+#                       INDEX CACHING
+# ============================================================
 def cached_file_count() -> int:
     """Return previously stored number of indexed files."""
     if not os.path.exists(METADATA_FILE):
@@ -151,6 +160,9 @@ def load_index(data_dir: str = "articles"):
 # endregion
 
 # region QUERY EXPANSION
+# ============================================================
+#                       QUERY EXPANSION
+# ============================================================
 def expand_query(
     query: str,
     mode: int,
@@ -220,6 +232,9 @@ def expand_query(
 # endregion
 
 # region SEARCH
+# ============================================================
+#                          SEARCH
+# ============================================================
 def search(
     query: str,
     vectorizer: TfidfVectorizer,
@@ -243,6 +258,9 @@ def search(
 # endregion
 
 # region STREAMLIT
+# ============================================================
+#                       STREAMLIT UI
+# ============================================================
 st.title("Wikipedia Search Demo")
 
 tab1, tab2 = st.tabs(["Search Results", "Project Overview"])
