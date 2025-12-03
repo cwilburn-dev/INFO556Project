@@ -28,7 +28,7 @@ for pkg in ["stopwords", "wordnet", "omw-1.4"]:
 stop_words: Set[str] = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 
-# Color constants for UI
+# color constants for UI
 COLOR_ORIGINAL = "#4DA6FF"  # Blue
 COLOR_CORE = "#FF4D4D"      # Red
 COLOR_EXPANDED = "#33CC33"  # Green
@@ -68,13 +68,11 @@ def extract_text_from_html(filepath: str) -> str:
     text = " ".join(p.get_text() for p in paragraphs)
     return clean_text(text)
 
-
 def preprocess(text: str) -> List[str]:
     """Lowercase, tokenize, remove stopwords, and lemmatize."""
     tokens = re.findall(r"\b[a-zA-Z]+\b", text.lower())
     tokens = [t for t in tokens if t not in stop_words]
     return [lemmatizer.lemmatize(t) for t in tokens]
-
 
 def vectorize_text(text: str, vectorizer: TfidfVectorizer):
     """Transform text to a TF-IDF vector."""
@@ -94,12 +92,10 @@ def cached_file_count() -> int:
     except Exception:
         return 0
 
-
 def cache_file_count(count: int) -> None:
     """Store number of indexed files."""
     with open(METADATA_FILE, "w") as f:
         json.dump({"file_count": count}, f)
-
 
 @st.cache_resource
 def load_index(data_dir: str = "articles"):
@@ -124,10 +120,10 @@ def load_index(data_dir: str = "articles"):
         placeholder.text("Loading cached index...")
         try:
             vectorizer, tfidf_matrix, doc_ids, doc_paths = joblib.load("tfidf_index.pkl")
-            placeholder.text("Index loaded ✅")
+            placeholder.text("Index loaded.")
             return vectorizer, tfidf_matrix, doc_ids, doc_paths
         except Exception:
-            rebuild = True  # fallback to rebuild
+            rebuild = True
 
     placeholder.text(f"Building TF-IDF index for {len(corpus_files)} documents...")
 
@@ -151,7 +147,7 @@ def load_index(data_dir: str = "articles"):
     joblib.dump((vectorizer, tfidf_matrix, doc_ids, doc_paths), "tfidf_index.pkl")
     cache_file_count(len(corpus_files))
 
-    placeholder.text(f"Index built ✅ ({len(doc_ids)} docs)")
+    placeholder.text(f"Index built: ({len(doc_ids)} docs)")
     return vectorizer, tfidf_matrix, doc_ids, doc_paths
 # endregion
 
@@ -174,9 +170,7 @@ def expand_query(
     core_tokens: Set[str] = set()
     expanded_tokens: Set[str] = set()
 
-    # --------------------
-    #   Mode: -1 Narrow
-    # --------------------
+    # mode: -1 Narrow
     if mode == -1:
         core_tokens = {w for w in tokens if wn.synsets(w, pos=wn.NOUN)}
         return " ".join(core_tokens), {
@@ -185,9 +179,7 @@ def expand_query(
             "expanded": set()
         }
 
-    # --------------------
-    #   Mode: 0 Normal
-    # --------------------
+    # mode: 0 Normal
     if mode == 0:
         core_tokens = set(tokens)
         return " ".join(tokens), {
@@ -196,9 +188,7 @@ def expand_query(
             "expanded": set()
         }
 
-    # --------------------
-    #   Mode: 1 Broad
-    # --------------------
+    # mode: +1 Broad
     core_tokens = set(tokens)
     expanded = set(tokens)
 
@@ -287,7 +277,7 @@ with tab1:
                     vectorizer_vocab=set(vectorizer.vocabulary_.keys())
                 )
 
-                # Display color-coded query
+                # displays color-coded query
                 html_tokens = []
                 for t in expanded_query.split():
                     if t in token_types["original"]:
@@ -304,7 +294,7 @@ with tab1:
                 st.markdown("**Expanded query:**")
                 st.markdown(" ".join(html_tokens), unsafe_allow_html=True)
 
-                # Execute search
+                # execute search
                 results = search(expanded_query, vectorizer, tfidf_matrix, doc_ids, doc_paths)
 
                 st.subheader("Top Results:")
@@ -339,7 +329,7 @@ with tab2:
     - <span style='color:{COLOR_OTHER}'>White</span>: other tokens  
 
     **Score Values:**  
-    Higher scores indicate stronger query–document similarity.  
+    Higher scores indicate stronger query-document similarity.  
     """,
         unsafe_allow_html=True
     )
