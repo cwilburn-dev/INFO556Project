@@ -314,38 +314,35 @@ with tab1:
 with tab2:
     st.header("Project Overview")
     st.markdown(
-    f"""
-<div style="color: white;">
-    <strong>About</strong><br>
+        f"""
+    **About**  
     This project implements a TF-IDF search engine over a small Wikipedia dataset.
 
-    <br><br><strong>Query Expansion Slider:</strong><br>
-    - <code>-1</code> Narrow: only core terms<br>
-    - <code>0</code> Normal: uses original preprocessed query<br>
-    - <code>1</code> Broad: adds related terms from WordNet<br>
+    **Query Expansion Slider:**  
+    - `-1` Narrow: only core terms  
+    - `0` Normal: uses original preprocessed query  
+    - `1` Broad: adds related terms from WordNet  
 
-    <br><strong>Color-Coded Terms:</strong><br>
-    - <span style='color:{COLOR_ORIGINAL}'>Blue</span>: original query terms<br>
-    - <span style='color:{COLOR_CORE}'>Red</span>: core/narrow terms<br>
-    - <span style='color:{COLOR_EXPANDED}'>Green</span>: expanded terms<br>
-    - <span style='color:{COLOR_OTHER}'>White</span>: other tokens<br>
+    **Color-Coded Terms:**  
+    - <span style='color:{COLOR_ORIGINAL}'>Blue</span>: original query terms  
+    - <span style='color:{COLOR_CORE}'>Red</span>: core/narrow terms  
+    - <span style='color:{COLOR_EXPANDED}'>Green</span>: expanded terms  
+    - <span style='color:{COLOR_OTHER}'>White</span>: other tokens  
 
-    <br><strong>Score Values:</strong><br>
-    Higher scores indicate stronger query-document similarity.<br>
+    **Score Values:**  
+    Higher scores indicate stronger query-document similarity.  
 
-    <br><strong>Suggested Searches:</strong><br>
-    The dataset is fairly small, so not every query will return results. Here are
-    some suggested searches to get you started:<br><br>
-
-    - <code>architecture</code><br>
-    - <code>ocean liners of the 1900s</code><br>
-    - <code>methods of detecting online misinformation</code><br>
-    - <code>popular bands</code><br>
-    - <code>history of space exploration</code><br>
-    - <code>ocean predators</code><br>
-</div>
-""",
-    unsafe_allow_html=True
-)
-
+    **Suggested Searches:**  
+    The dataset is fairly small, so not every query will return results.  Here are
+    some suggested searchs to get you started:  
+ 
+    - `architecture`  
+    - `ocean liners of the 1900s`  
+    - `methods of detecting online misinformation`  
+    - `popular bands`  
+    - `history of space exploration`  
+    - `ocean predators`  
+    """,
+        unsafe_allow_html=True
+    )
 # endregion
