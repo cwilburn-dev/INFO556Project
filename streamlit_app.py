@@ -333,7 +333,8 @@ with tab2:
     Higher scores indicate stronger query-document similarity.  
 
     **Suggested Searches:**  
-    Try these sample queries to explore how the query-expansion slider behaves:
+    The dataset is fairly small, so not every query will return results.  Here are
+    some suggested searchs to get you started:  
  
     - `architecture`  
     - `ocean liners of the 1900s`  
