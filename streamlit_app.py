@@ -331,6 +331,16 @@ with tab2:
 
     **Score Values:**  
     Higher scores indicate stronger query-document similarity.  
+
+    **Suggested Searches:**  
+    Try these sample queries to explore how the query-expansion slider behaves:
+ 
+    - `architecture`  
+    - `ocean liners of the 1900s`  
+    - `methods of detecting online misinformation`  
+    - `popular bands`  
+    - `history of space exploration`  
+    - `ocean predators`  
     """,
         unsafe_allow_html=True
     )
