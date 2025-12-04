@@ -261,7 +261,7 @@ def search(
 # ============================================================
 #                       STREAMLIT UI
 # ============================================================
-st.title("Wikipedia Search Demo")
+st.title("Query Expansion Demo")
 
 tab1, tab2 = st.tabs(["Search Results", "Project Overview"])
 
@@ -294,7 +294,6 @@ with tab1:
                     vectorizer_vocab=set(vectorizer.vocabulary_.keys())
                 )
 
-                # displays color-coded query
                 html_tokens = []
                 for t in expanded_query.split():
                     if t in token_types["original"]:
