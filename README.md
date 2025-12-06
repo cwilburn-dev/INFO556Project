@@ -56,6 +56,11 @@ To install the dependencies, execute the command below:
 pip install -r requirements.txt
 
 ## Usage
+We recommend viewing the project via the live Streamlit app:  
+https://info556project-wilburn.streamlit.app/  
+
+If you choose to run the app locally, note that some functionality or behavior may differ from the deployed version.  
+
 Run the Streamlit application:  
 streamlit run streamlit_app.py
 
