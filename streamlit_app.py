@@ -14,25 +14,24 @@ import json
 import urllib.parse
 import nltk
 
-"""
-Query Expansion Demo (Streamlit App)
-------------------------------------
-This application demonstrates user-controlled query expansion over a small
-Wikipedia-based document corpus. The system:
+# Query Expansion Demo (Streamlit App)
+# ------------------------------------
+# This application demonstrates user-controlled query expansion over a small
+# Wikipedia-based document corpus. The system:
+#
+# 1. Loads and preprocesses HTML documents from /articles
+# 2. Builds or reloads a cached TF-IDF index
+# 3. Allows the user to apply narrow/normal/broad query expansion using WordNet
+# 4. Runs cosine-similarity search and displays color-coded expanded queries
+# 5. Links results to GitHub Pages versions of the articles
+#
+# Code sections:
+# - Preprocessing (cleaning + tokenizing)
+# - Index caching and incremental rebuild logic
+# - Query expansion (WordNet synonyms + hypernyms)
+# - Search (TF-IDF cosine similarity)
+# - Streamlit UI (main interface)
 
-1. Loads and preprocesses HTML documents from /articles
-2. Builds or reloads a cached TF-IDF index
-3. Allows the user to apply narrow/normal/broad query expansion using WordNet
-4. Runs cosine-similarity search and displays color-coded expanded queries
-5. Links results to GitHub Pages versions of the articles
-
-The code is organized into the following sections:
-- Preprocessing (cleaning + tokenizing)
-- Index caching and incremental rebuild logic
-- Query expansion (WordNet synonyms + hypernyms)
-- Search (TF-IDF cosine similarity)
-- Streamlit UI (main interface)
-"""
 
 # region CONSTANTS/CONFIG
 # ============================================================
