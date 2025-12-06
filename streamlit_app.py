@@ -14,6 +14,26 @@ import json
 import urllib.parse
 import nltk
 
+"""
+Query Expansion Demo (Streamlit App)
+------------------------------------
+This application demonstrates user-controlled query expansion over a small
+Wikipedia-based document corpus. The system:
+
+1. Loads and preprocesses HTML documents from /articles
+2. Builds or reloads a cached TF-IDF index
+3. Allows the user to apply narrow/normal/broad query expansion using WordNet
+4. Runs cosine-similarity search and displays color-coded expanded queries
+5. Links results to GitHub Pages versions of the articles
+
+The code is organized into the following sections:
+- Preprocessing (cleaning + tokenizing)
+- Index caching and incremental rebuild logic
+- Query expansion (WordNet synonyms + hypernyms)
+- Search (TF-IDF cosine similarity)
+- Streamlit UI (main interface)
+"""
+
 # region CONSTANTS/CONFIG
 # ============================================================
 #                     CONSTANTS & CONFIG
@@ -32,10 +52,10 @@ stop_words: Set[str] = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 
 # color constants for UI
-COLOR_ORIGINAL = "#4DA6FF"  # Blue
-COLOR_CORE = "#FF4D4D"      # Red
-COLOR_EXPANDED = "#33CC33"  # Green
-COLOR_OTHER = "#FFFFFF"     # White
+COLOR_ORIGINAL = "#4DA6FF"  # blue
+COLOR_CORE = "#FF4D4D"      # red
+COLOR_EXPANDED = "#33CC33"  # green
+COLOR_OTHER = "#FFFFFF"     # white
 
 METADATA_FILE = "index_metadata.json"
 # endregion
@@ -45,13 +65,24 @@ METADATA_FILE = "index_metadata.json"
 #                       PREPROCESSING
 # ============================================================
 def clean_text(text: str) -> str:
-    """Remove bracketed citations and normalize whitespace."""
+    """
+    Remove Wikipedia-style bracketed citations and normalize whitespace.
+
+    This keeps the document text more consistent for tokenization and avoids
+    weighting TF-IDF features based on citation formatting rather than content.
+    """
     text = re.sub(r"\[\d+\]", "", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 def extract_text_from_html(filepath: str) -> str:
-    """Extract content text from a Wikipedia HTML file."""
+    """
+    Extract readable text from a downloaded Wikipedia HTML file.
+
+    The function searches for the main content container, collects paragraphs
+    and section headers, and returns a cleaned plaintext string suitable for
+    preprocessing and vectorization.
+    """
     if not os.path.exists(filepath):
         return ""
 
@@ -74,13 +105,22 @@ def extract_text_from_html(filepath: str) -> str:
     return clean_text(text)
 
 def preprocess(text: str) -> List[str]:
-    """Lowercase, tokenize, remove stopwords, and lemmatize."""
+    """
+    Normalize text by lowercasing, tokenizing alphabetic terms, removing
+    stopwords, and lemmatizing. This produces the token lists used both for
+    document indexing and query processing.
+    """
     tokens = re.findall(r"\b[a-zA-Z]+\b", text.lower())
     tokens = [t for t in tokens if t not in stop_words]
     return [lemmatizer.lemmatize(t) for t in tokens]
 
 def vectorize_text(text: str, vectorizer: TfidfVectorizer):
-    """Transform text to a TF-IDF vector."""
+    """
+    Convert raw text into a TF-IDF vector using the fitted vectorizer.
+    
+    Queries pass through the same preprocessing pipeline as documents to ensure
+    consistent vocabulary and weighting.
+    """
     tokens = preprocess(text)
     return vectorizer.transform([" ".join(tokens)])
 # endregion
@@ -90,7 +130,12 @@ def vectorize_text(text: str, vectorizer: TfidfVectorizer):
 #                       INDEX CACHING
 # ============================================================
 def cached_file_count() -> int:
-    """Return previously stored number of indexed files."""
+    """
+    Read the number of indexed documents stored in the metadata file.
+
+    Used to decide whether the existing TF-IDF index should be reloaded or
+    rebuilt when the application starts.
+    """
     if not os.path.exists(METADATA_FILE):
         return 0
     try:
@@ -101,13 +146,29 @@ def cached_file_count() -> int:
         return 0
 
 def cache_file_count(count: int) -> None:
-    """Store number of indexed files."""
+    """
+    Writes the current number of indexed documents to the metadata file.
+
+    This ensures that the TF-IDF index is automatically rebuilt if the user
+    modifies the dataset.
+    """
     with open(METADATA_FILE, "w") as f:
         json.dump({"file_count": count}, f)
 
 @st.cache_resource
 def load_index(data_dir: str = "articles"):
-    """Load or rebuild the TF-IDF index."""
+    """
+    Load the cached TF-IDF index if available and valid; otherwise rebuild it.
+
+    The rebuild process includes:
+    - Extracting and preprocessing article text
+    - Training a TF-IDF vectorizer
+    - Constructing the TF-IDF document matrix
+    - Saving all components to disk for future reuse
+
+    Streamlit caching ensures that indexing only occurs when the underlying
+    dataset has changed.
+    """
     placeholder = st.empty()
 
     if not os.path.exists(data_dir):
@@ -169,8 +230,19 @@ def expand_query(
     vectorizer_vocab: Optional[Set[str]] = None,
     max_expansions: int = 5
 ) -> Tuple[str, Dict[str, Set[str]]]:
-    """Expand, narrow, or preserve query based on user-selected mode."""
+    """
+    Expand, narrow, or preserve a query depending on the selected mode.
 
+    - **Narrow (-1):** Restricts the query to core noun terms to increase
+      precision.
+    - **Normal (0):** Uses the original preprocessed tokens without expansion.
+    - **Broad (+1):** Adds controlled numbers of WordNet synonyms and hypernyms
+      that also appear in the vectorizer vocabulary.
+
+    In broad mode, original tokens are duplicated to increase their weight in
+    the TF-IDF vector. This prevents expanded terms from overwhelming the user's
+    intent and keeps the retrieval behavior interpretable.
+    """
     tokens = preprocess(query)
     if not tokens:
         return "", {"original": set(), "core": set(), "expanded": set()}
@@ -181,7 +253,7 @@ def expand_query(
     core_tokens: Set[str] = set()
     expanded_tokens: Set[str] = set()
 
-    # mode: -1 Narrow
+    # mode: -1 narrow
     if mode == -1:
         core_tokens = {w for w in tokens if wn.synsets(w, pos=wn.NOUN)}
         return " ".join(core_tokens), {
@@ -190,7 +262,7 @@ def expand_query(
             "expanded": set()
         }
 
-    # mode: 0 Normal
+    # mode: 0 normal
     if mode == 0:
         core_tokens = set(tokens)
         return " ".join(tokens), {
@@ -199,7 +271,7 @@ def expand_query(
             "expanded": set()
         }
 
-    # mode: +1 Broad
+    # mode: +1 broad
     core_tokens = set(tokens)
     expanded = set(tokens)
 
@@ -243,7 +315,13 @@ def search(
     doc_paths: Dict[str, str],
     top_k: int = 10
 ) -> List[Tuple[str, float]]:
-    """Compute cosine similarity between query and documents."""
+    """
+    Compute cosine similarity between the query vector and all document vectors.
+
+    Returns the top `k` highest-scoring documents. This function is intentionally
+    lightweight because the dataset is small; larger corpora would benefit from
+    BM25 or an inverted index structure.
+    """
     if not query:
         return []
 
